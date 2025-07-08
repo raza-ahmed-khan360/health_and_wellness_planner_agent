@@ -35,7 +35,7 @@ git clone https://github.com/your-username/health-and-wellness-planner-agent.git
 cd health-and-wellness-planner-agent
 ```
 
-# Create Virtual Environment
+### 2. Create Virtual Environment
 ```
 python -m venv .venv
 ```
@@ -48,12 +48,12 @@ python -m venv .venv
 source .venv/bin/activate
 ```
 
-# Install Dependencies
+### 3. Install Dependencies
 ```
 pip install -r requirements.txt
 ```
 
-# Add Environmental Variable
+### 4. Add Environmental Variable
 Create ```.env``` file:
 
 ```
