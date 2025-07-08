@@ -1,4 +1,4 @@
-# 1🧠 Health & Wellness Planner Agent (CLI Version)
+# 🧠 Health & Wellness Planner Agent (CLI Version)
 
 A smart and friendly **Command-Line AI assistant** that helps you define health goals, plan meals, recommend workouts, schedule check-ins, and track progress. Built using the [OpenAI Agents SDK](https://openai.github.io/openai-agents-python/).
 
@@ -33,3 +33,84 @@ A smart and friendly **Command-Line AI assistant** that helps you define health 
 ```bash
 git clone https://github.com/your-username/health-and-wellness-planner-agent.git
 cd health-and-wellness-planner-agent
+```
+
+# Create Virtual Environment
+```
+python -m venv .venv
+```
+## Windows
+```
+.venv\Scripts\activate
+```
+## macOS/Linux
+```
+source .venv/bin/activate
+```
+
+# Install Dependencies
+```
+pip install -r requirements.txt
+```
+
+# Add Environmental Variable
+Create ```.env``` file:
+
+```
+OPENAI_API_KEY=your-api-key-here
+```
+
+# ▶️ Run the Agent (CLI)
+
+```
+python main.py
+```
+
+# 💬 Example Conversation
+```
+🧠 Welcome to your Health & Wellness Planner!
+Type your goals, health info, or meal/workout requests. Type 'exit' to quit.
+
+👤 You: I want to lose 5 kg in 2 months
+🤖 AI: Got it! You've set a goal to lose 5 kg in 2 months.
+
+👤 You: I follow a vegetarian diet
+🤖 AI: Here's a weekly vegetarian meal plan...
+
+👤 You: I’m a beginner at workouts
+🤖 AI: Here's your 7-day beginner workout routine...
+
+👤 You: I have neck pain
+🤖 AI: 🩹 I recommend gentle, low-impact workouts like yoga or light walking.
+
+👤 You: Schedule my check-in on Monday at 8am
+🤖 AI: ✅ Check-in set for Monday at 8am.
+```
+
+# 🧱 Project Structure
+
+```
+health_and_wellness_planner_agent/
+├── agent/                    # Main agent and sub-agents
+│   ├── escalation_agent.py
+│   ├── injury_support_agent.py
+│   ├── nutrition_expert_agent.py
+├── tools/                     # Tool implementations
+│   ├── goal_analyzer.py
+│   ├── meal_planner.py
+│   ├── scheduler.py
+│   ├── tracker.py
+│   ├── workout_recommender.py
+├── context.py                 # Shared context models (UserSessionContext, RunContextWrapper)
+├── hooks.py                   # Custom agent/tool hooks
+├── utils/                     # Streaming, logging, and helpers
+├── main.py                    # CLI entry point
+├── .env                       # API key (not committed)
+├── requirements.txt
+└── README.md
+```
+
+# 🔗 Resources
+
+[OpenAI Agents SDK Documentation](https://openai.github.io/openai-agents-python/)
+
