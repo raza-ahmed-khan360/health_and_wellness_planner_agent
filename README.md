@@ -31,7 +31,7 @@ A smart and friendly **Command-Line AI assistant** that helps you define health 
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/health-and-wellness-planner-agent.git
+git clone https://github.com/raza-ahmed-khan360/health-and-wellness-planner-agent.git
 cd health-and-wellness-planner-agent
 ```
 
