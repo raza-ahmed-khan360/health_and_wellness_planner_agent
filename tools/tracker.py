@@ -1,35 +1,28 @@
-from agents.tool import function_tool
 from pydantic import BaseModel
-from datetime import datetime
+from typing import Literal, Optional
+from agents import function_tool, RunContextWrapper
 from context import UserSessionContext
-from agents import RunContextWrapper
-from typing import Literal
 
-class ProgressUpdate(BaseModel):
-    category: Literal["weight", "workout", "meal", "habit"]
-    value: str
+# 📥 Input schema
+class ProgressInput(BaseModel):
+    date: str  # e.g., "2024-07-26"
+    weight: float  # e.g., 70.5
+    metric: Literal["kg", "lbs"]
 
-class ProgressResponse(BaseModel):
+# 📤 Output schema
+class ProgressLog(BaseModel):
     message: str
 
-@function_tool("ProgressTrackerTool")
+# 🛠️ Final tool definition
+@function_tool
 async def progress_tracker_tool(
     wrapper: RunContextWrapper[UserSessionContext],
-    inputs: ProgressUpdate
-) -> ProgressResponse:
-    now = datetime.now().strftime("%Y-%m-%d %H:%M")
-
-    if not inputs.value.strip():
-        return ProgressResponse(
-            message="Oops! Please tell me what you did—like 'Ran 5 km'—and make sure it's not blank."
-        )
-
-    wrapper.context.progress_logs.append({
-        "timestamp": now,
-        "category": inputs.category,
-        "value": inputs.value
-    })
-
-    return ProgressResponse(
-        message=f"Great job! I saved your {inputs.category} progress for {now}: {inputs.value}"
-    )
+    inputs: ProgressInput
+) -> str:
+    log = {
+        "date": inputs.date,
+        "weight": inputs.weight,
+        "metric": inputs.metric
+    }
+    wrapper.context.progress_logs.append(log)
+    return f"✅ Logged your weight update for **{inputs.date}**: **{inputs.weight}{inputs.metric}**"

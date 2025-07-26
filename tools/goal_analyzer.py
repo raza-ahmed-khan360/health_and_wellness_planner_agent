@@ -1,42 +1,37 @@
 import re
-from agents.tool import function_tool
+from typing import Optional
 from pydantic import BaseModel
-from typing import Literal, Optional
+from agents import function_tool, RunContextWrapper
 from context import UserSessionContext
-from agents import RunContextWrapper
+from guardrails import goal_input, goal_output
 
-# 📥 Define input/output models
 class GoalInput(BaseModel):
     text: str
 
 class StructuredGoal(BaseModel):
     quantity: float
-    metric: Literal["kg", "lbs"]
-    duration: str
+    metric: str  # "kg" or "lbs"
+    duration: str  # e.g. "2 months"
 
 def parse_goal(text: str) -> Optional[StructuredGoal]:
-    text = text.lower()
-    quantity_match = re.search(r"(\d+(\.\d+)?)", text)
-    metric_match = re.search(r"\b(kg|kgs|kilograms|pounds|lbs)\b", text)
-    duration_match = re.search(r"\b(in\s*)?(\d+)\s?(week|month|year|day)s?\b", text)
-    if quantity_match and metric_match and duration_match:
-        quantity = float(quantity_match.group(1))
-        raw_metric = metric_match.group(1).lower()
-        metric = "kg" if "kg" in raw_metric else "lbs"
-        duration = duration_match.group(0).replace("in", "").strip()
+    t = text.lower()
+    pattern = r"(?:lose|gain|drop|shed|put on|reduce|cut|add)?\s*(\d+(?:\.\d+)?)\s*(?:\s)?(kg|kgs|kilograms?|pounds?|lbs?)\s*(?:in|over|within)?\s*(\d{1,2})\s*(day|days|week|weeks|month|months|year|years)"
+    match = re.search(pattern, t)
+    if match:
+        quantity = float(match.group(1))
+        metric_raw = match.group(2)
+        metric = "kg" if "kg" in metric_raw else "lbs"
+        duration = f"{match.group(3)} {match.group(4)}"
         return StructuredGoal(quantity=quantity, metric=metric, duration=duration)
     return None
 
-@function_tool("GoalAnalyzerTool")
+@function_tool
 async def goal_analyzer_tool(
-    wrapper: RunContextWrapper[UserSessionContext],
+    ctx: RunContextWrapper[UserSessionContext],
     inputs: GoalInput
-) -> Optional[StructuredGoal]:
-    """
-    Parses user goal text into structured form and saves it to context.
-    """
+) -> str:
     goal = parse_goal(inputs.text)
     if goal:
-        wrapper.context.goal = goal.model_dump()
-        return goal
-    return None
+        ctx.context.goal = goal.model_dump()
+        return f"🥗 Thanks for mentioning your goal. I've noted that you'd like to lose **{goal.quantity} {goal.metric}** in **{goal.duration}**. I'll generate a personalized plan to support this!"
+    raise ValueError("❌ Sorry, I couldn't understand your goal. Please specify it like: 'lose 5kg in 2 months'.")

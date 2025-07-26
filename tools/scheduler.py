@@ -1,43 +1,63 @@
-from agents.tool import function_tool
 from pydantic import BaseModel
-from typing import Literal
-from agents import RunContextWrapper
+from typing import Literal, Union, List
+from agents import Agent, RunContextWrapper, input_guardrail, GuardrailFunctionOutput, function_tool
 from context import UserSessionContext
 
-# ✅ Input model for scheduling check-ins
+# 📥 Input schema
 class CheckinInput(BaseModel):
     day_of_week: Literal[
         "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
     ]
-    time_of_day: str
+    time_of_day: str  # e.g., "9am" or "14:00"
 
-# ✅ Output model with confirmation message
+# 📤 Output schema
 class CheckinConfirmation(BaseModel):
     message: str
 
-# ✅ Main tool function
-@function_tool("CheckinSchedulerTool")
+# 🔒 Input guardrail to validate format
+@input_guardrail
+async def checkin_input_guardrail(
+    ctx: RunContextWrapper[UserSessionContext],
+    agent: Agent,
+    input: Union[str, List[dict]]
+) -> GuardrailFunctionOutput:
+    try:
+        # Flatten input if it's a list of messages
+        if isinstance(input, list):
+            input_text = " ".join(msg.get("content", "") for msg in input if msg.get("role") == "user")
+        else:
+            input_text = input
+
+        # Access the day_of_week enum or list of valid days
+        valid_days = CheckinInput.__annotations__['day_of_week'] if isinstance(CheckinInput.__annotations__['day_of_week'], list) else []
+        
+        # Check for day and time indicators
+        if any(day.lower() in input_text.lower() for day in valid_days):
+            if ":" in input_text or "am" in input_text.lower() or "pm" in input_text.lower():
+                return GuardrailFunctionOutput(
+                    output_info={"valid": True, "reason": "Valid check-in request."},
+                    tripwire_triggered=False
+                )
+
+        return GuardrailFunctionOutput(
+            output_info={"valid": False, "reason": "Please specify a valid day and time (e.g., Friday at 10am)."},
+            tripwire_triggered=True
+        )
+
+    except Exception as e:
+        return GuardrailFunctionOutput(
+            output_info={"valid": False, "reason": f"Error validating input: {str(e)}"},
+            tripwire_triggered=True
+        )
+
+# ✅ Final tool definition
+@function_tool
 async def checkin_scheduler_tool(
     wrapper: RunContextWrapper[UserSessionContext],
     inputs: CheckinInput
-) -> CheckinConfirmation:
-    # Guardrail: Validate input
-    valid_days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-    if inputs.day_of_week not in valid_days or not inputs.time_of_day.strip():
-        return CheckinConfirmation(
-            message="Oops! Please give me a real day of the week and a time, like 'Monday at 9am'. Try again!"
-        )
-
-    # Initialize check-in schedule if missing
-    if not wrapper.context.checkin_schedule:
-        wrapper.context.checkin_schedule = []
-
-    # Append check-in to context
+) -> str:
     wrapper.context.checkin_schedule.append({
         "day": inputs.day_of_week,
         "time": inputs.time_of_day
     })
-
-    return CheckinConfirmation(
-        message=f"✅ Awesome! Your check-in is set for {inputs.day_of_week} at {inputs.time_of_day}."
-    )
+    return f"✅ Check-in scheduled for **{inputs.day_of_week}** at **{inputs.time_of_day}**!"

@@ -1,53 +1,51 @@
-from pydantic import BaseModel
 from typing import List
-from agents.tool import function_tool
-from agents import RunContextWrapper
+from pydantic import BaseModel
+from agents import function_tool, RunContextWrapper
 from context import UserSessionContext, MealPlanDay
-from guardrails import normalize_diet_name, is_valid_diet
+from guardrails import diet_input, mealplan_output, normalize_diet_name, is_valid_diet 
 
-
-# 📥 Input schema
+# 📥 Input model
 class MealPlannerInput(BaseModel):
     diet: str
 
-# 🍽️ Tool implementation
-@function_tool("MealPlannerTool")
+# 🛠️ Meal Planner Tool
+@function_tool
 async def meal_planner_tool(
-    wrapper: RunContextWrapper[UserSessionContext],
+    ctx: RunContextWrapper[UserSessionContext],
     inputs: MealPlannerInput
-) -> List[MealPlanDay]:
-    raw_diet = inputs.diet.strip().lower()
-    normalized_diet = normalize_diet_name(raw_diet)
-
-    # If diet is not valid, clear context and return empty meal plan
+) -> str:
+    normalized_diet = normalize_diet_name(inputs.diet.strip().lower())
+    
     if not is_valid_diet(normalized_diet):
-        wrapper.context.diet_preferences = None
-        wrapper.context.meal_plan = None
-        return []
+        ctx.context.diet_preferences = None
+        ctx.context.meal_plan = []
+        return "❌ Sorry, that diet is not supported."
 
-    # Generate a 7-day meal plan
     days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-    description_templates = {
-        "vegetarian": "Plant-based with lentils, chickpeas, and grains.",
-        "vegan": "100% plant-based with no animal products.",
-        "keto": "Low-carb, high-fat meals with healthy oils and proteins.",
-        "paleo": "Whole foods, lean proteins, nuts, and no grains or dairy.",
-        "diabetic": "Low-glycemic meals with stable blood sugar focus.",
-        "gluten-free": "Balanced, gluten-free meals with rice, corn, and vegetables."
+    templates = {
+        "vegetarian": "Protein-rich lentil and quinoa bowls with seasonal veggies.",
+        "keto": "High-fat, low-carb meals with avocado, eggs, and meat.",
+        "vegan": "Plant-based meals with legumes, grains, and greens.",
+        "mediterranean": "Balanced meals with fish, olive oil, whole grains, and vegetables.",
+        "low-carb": "Lean proteins with leafy greens and nuts.",
+        "balanced": "A mix of protein, carbs, and healthy fats in each meal."
     }
 
-    meal_plan = [
+    plan = [
         MealPlanDay(
             day=day,
             meal_name=f"{normalized_diet.title()} Power Bowl",
-            description=description_templates.get(normalized_diet, "Healthy and nutritious."),
+            description=templates.get(normalized_diet, "Healthy and clean meal."),
             calories=450
-        )
-        for day in days
+        ) for day in days
     ]
 
-    # Save to context
-    wrapper.context.diet_preferences = normalized_diet
-    wrapper.context.meal_plan = [day.model_dump() for day in meal_plan]
+    ctx.context.diet_preferences = normalized_diet
+    ctx.context.meal_plan = [entry.model_dump() for entry in plan]
 
-    return meal_plan
+    # Format as Markdown
+    markdown = ["Here's a vegetarian meal plan for the week:\n"]
+    for entry in plan:
+        markdown.append(f"- **{entry.day}:** {entry.meal_name}  ")
+        markdown.append(f"  _{entry.description}_ **Calories:** {entry.calories}")
+    return "\n".join(markdown)

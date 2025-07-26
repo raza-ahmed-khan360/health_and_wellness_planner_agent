@@ -1,26 +1,42 @@
-from agents import Agent
-from agents.tool import function_tool
+from agents import Agent, InputGuardrail, GuardrailFunctionOutput, RunContextWrapper, function_tool
 from pydantic import BaseModel
-from agents import RunContextWrapper
 from context import UserSessionContext
 
+# 🚨 Input schema
 class EscalationInput(BaseModel):
     issue: str
 
-@function_tool("EscalationTool")
-async def escalation_tool(
-    wrapper: RunContextWrapper[UserSessionContext],
-    inputs: EscalationInput
-) -> str:
-    wrapper.context.handoff_logs.append(f"Escalated to human coach for: {inputs.issue}")
+# 🔒 Guardrail function
+async def escalation_guardrail(
+    ctx: RunContextWrapper[UserSessionContext],
+    agent,
+    input_text: str
+) -> GuardrailFunctionOutput:
+    is_valid = bool(input_text and input_text.strip())
+    return GuardrailFunctionOutput(
+        output_info={
+            "valid": is_valid,
+            "reason": "Issue description is valid." if is_valid else "Please describe your issue clearly."
+        },
+        tripwire_triggered=not is_valid
+    )
+
+# 🧠 Route handler (agent logic)
+async def handle_escalation(ctx: RunContextWrapper[UserSessionContext], input_text: str) -> str:
+    ctx.context.handoff_logs.append(f"Escalated to human coach for: {input_text}")
     return (
-        f"🚨 You mentioned: '{inputs.issue}'. "
-        "This issue may require help from a human coach or trainer. "
+        f"🚨 You mentioned: '{input_text}'. "
+        "This may require help from a human coach or trainer. "
         "Please reach out to our team or expect a follow-up soon."
     )
 
-escalation_agent = Agent(
+# 👤 Escalation Agent
+escalation_agent = Agent[UserSessionContext](
     name="EscalationAgent",
-    instructions="Escalate serious issues to a human coach via the escalation tool.",
-    tools=[escalation_tool],
+    model="gpt-4o-mini",
+    instructions="Escalate serious user issues to a human coach."
 )
+
+@function_tool
+async def handoff_escalation(ctx: RunContextWrapper[UserSessionContext], input: str) -> str:
+    return await handle_escalation(ctx, input)

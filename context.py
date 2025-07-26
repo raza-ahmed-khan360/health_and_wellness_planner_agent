@@ -1,8 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict
 from datetime import datetime
-from agents import RunContextWrapper
-
 
 # 🎯 Goal Schema
 class Goal(BaseModel):
@@ -10,7 +8,7 @@ class Goal(BaseModel):
     metric: str  # e.g., "kg", "lbs"
     duration: str  # e.g., "2 months"
 
-
+# 🍽️ Meal Plan Schema
 class MealPlanDay(BaseModel):
     day: str
     meal_name: str
@@ -23,31 +21,22 @@ class WorkoutDay(BaseModel):
     workout: str
     duration_minutes: int
 
-
 # 💬 Message Log
 class ChatMessage(BaseModel):
     role: str  # "user" or "assistant"
     content: str
     timestamp: str = Field(default_factory=lambda: datetime.now().isoformat())
 
-
-# 📦 Shared user context
+# 📦 Shared session context
 class UserSessionContext(BaseModel):
     name: str
     uid: int
-
-    goal: Optional[dict] = None
+    goal: Optional[Goal] = None
     diet_preferences: Optional[str] = None
-    workout_plan: Optional[dict] = None
-    meal_plan: Optional[list] = None
+    workout_plan: List[WorkoutDay] = Field(default_factory=list)
+    meal_plan: List[MealPlanDay] = Field(default_factory=list)
     injury_notes: Optional[str] = None
     handoff_logs: List[str] = Field(default_factory=list)
     progress_logs: List[Dict[str, str]] = Field(default_factory=list)
-    chat_history: List[ChatMessage] = Field(default_factory=list)
-    checkin_schedule: Optional[List[Dict[str, str]]] = Field(default_factory=list)
-
-# 🎒 OpenAI Agents SDK-compatible context wrapper
-user_context = RunContextWrapper(UserSessionContext(
-    name="User",
-    uid=1
-))
+    checkin_schedule: List[Dict[str, str]] = Field(default_factory=list)
+    last_user_input: Optional[str] = None  # useful for guardrails

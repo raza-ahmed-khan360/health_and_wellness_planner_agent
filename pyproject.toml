@@ -9,5 +9,6 @@ dependencies = [
     "pydantic",
     "python-dotenv",
     "streamlit",
-    "openai>=1.93.0"
+    "openai>=1.93.0",
+    "chainlit",
 ]
