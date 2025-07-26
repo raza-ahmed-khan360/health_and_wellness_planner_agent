@@ -1,4 +1,4 @@
-from agents import Agent, InputGuardrail, GuardrailFunctionOutput, RunContextWrapper, function_tool
+from agents import Agent, GuardrailFunctionOutput, RunContextWrapper
 from pydantic import BaseModel
 from context import UserSessionContext
 from guardrails import is_injury_related
@@ -22,22 +22,9 @@ async def injury_input_guardrail(
         tripwire_triggered=not is_valid
     )
 
-# 🧠 Route handler
-async def handle_injury_support(ctx: RunContextWrapper[UserSessionContext], input_text: str) -> str:
-    ctx.context.injury_notes = input_text
-    ctx.context.handoff_logs.append("Handoff to InjurySupportAgent")
-    return (
-        f"🩹 Based on your note: '{input_text}', I recommend gentle, low-impact exercises "
-        "like yoga, stretching, or light walking. Always consult a medical professional before continuing workouts."
-    )
-
 # 👤 Injury Support Agent
 injury_support_agent = Agent[UserSessionContext](
     name="InjurySupportAgent",
     model="gpt-4o-mini",
     instructions="Help users with workout recommendations if they have an injury."
 )
-
-@function_tool
-async def handoff_injury_support(ctx: RunContextWrapper[UserSessionContext], input: str) -> str:
-    return await handle_injury_support(ctx, input)

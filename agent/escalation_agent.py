@@ -1,4 +1,4 @@
-from agents import Agent, InputGuardrail, GuardrailFunctionOutput, RunContextWrapper, function_tool
+from agents import Agent, GuardrailFunctionOutput, RunContextWrapper
 from pydantic import BaseModel
 from context import UserSessionContext
 
@@ -21,15 +21,6 @@ async def escalation_guardrail(
         tripwire_triggered=not is_valid
     )
 
-# 🧠 Route handler (agent logic)
-async def handle_escalation(ctx: RunContextWrapper[UserSessionContext], input_text: str) -> str:
-    ctx.context.handoff_logs.append(f"Escalated to human coach for: {input_text}")
-    return (
-        f"🚨 You mentioned: '{input_text}'. "
-        "This may require help from a human coach or trainer. "
-        "Please reach out to our team or expect a follow-up soon."
-    )
-
 # 👤 Escalation Agent
 escalation_agent = Agent[UserSessionContext](
     name="EscalationAgent",
@@ -37,6 +28,3 @@ escalation_agent = Agent[UserSessionContext](
     instructions="Escalate serious user issues to a human coach."
 )
 
-@function_tool
-async def handoff_escalation(ctx: RunContextWrapper[UserSessionContext], input: str) -> str:
-    return await handle_escalation(ctx, input)

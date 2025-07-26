@@ -19,9 +19,6 @@ class LoggingRunHooks(RunHooks[UserSessionContext]):
         print(f"[RUN HOOK] 📦 Tool '{tool.name}' returned:")
         print(result)
 
-    async def on_handoff(self, context: RunContextWrapper[UserSessionContext], from_agent: Agent, to_agent: Agent) -> None:
-        print(f"[RUN HOOK] 🔁 Handoff from agent '{from_agent.name}' to '{to_agent.name}'.")
-
     async def on_error(self, context: RunContextWrapper[UserSessionContext], agent: Agent, error: Exception) -> None:
         print(f"[RUN HOOK] ❌ Error in agent '{agent.name}': {error}")
 
@@ -39,12 +36,6 @@ def get_expected_tool(user_input: str) -> str | None:
         return "checkin_scheduler_tool"
     elif any(word in user_input for word in ["progress", "track", "log weight"]):
         return "progress_tracker_tool"
-    elif any(word in user_input for word in ["injury", "pain", "hurt"]):
-        return "handoff_injury_support"
-    elif any(word in user_input for word in ["medical", "condition", "diabetes", "cholesterol"]):
-        return "handoff_nutrition_expert"
-    elif any(word in user_input for word in ["real trainer", "human", "expert"]):
-        return "handoff_escalation"
     return None
 
 
@@ -64,9 +55,6 @@ class LoggingAgentHooks(AgentHooks[UserSessionContext]):
     async def on_tool_end(self, context: RunContextWrapper[UserSessionContext], agent: Agent, tool: Tool, result: Any) -> None:
         print(f"[AGENT HOOK] ✅ Tool '{tool.name}' ended with result:")
         print(result)
-
-    async def on_handoff(self, context: RunContextWrapper[UserSessionContext], from_agent: Agent, to_agent: Agent) -> None:
-        print(f"[AGENT HOOK] 🔄 Handoff from '{from_agent.name}' to '{to_agent.name}'.")
 
     # ✅ Guardrail: restrict which tool can be called based on user input
     async def before_tool_call(self, tool_call: Any, context: UserSessionContext):

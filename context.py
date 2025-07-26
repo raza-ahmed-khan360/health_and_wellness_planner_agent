@@ -39,4 +39,4 @@ class UserSessionContext(BaseModel):
     handoff_logs: List[str] = Field(default_factory=list)
     progress_logs: List[Dict[str, str]] = Field(default_factory=list)
     checkin_schedule: List[Dict[str, str]] = Field(default_factory=list)
-    last_user_input: Optional[str] = None  # useful for guardrails
+    last_user_input: Optional[str] = None  
