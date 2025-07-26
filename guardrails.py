@@ -1,7 +1,7 @@
 import re
 from typing import List, Union
 from pydantic import BaseModel
-from agents import input_guardrail, output_guardrail, GuardrailFunctionOutput, RunContextWrapper, Agent
+from agents import input_guardrail, output_guardrail, GuardrailFunctionOutput
 
 # --- 🥗 VALID DIET MAPPING ---
 VALID_DIET_ALIASES = {
@@ -70,8 +70,6 @@ class MealPlanDay(BaseModel):
 # --- ✅ INPUT GUARDRAILS ---
 @input_guardrail
 async def validate_goal_input(
-    context: RunContextWrapper,
-    agent: Agent,
     input: Union[str, List[dict]]
 ) -> GuardrailFunctionOutput:
     if isinstance(input, list):
@@ -96,8 +94,6 @@ async def validate_goal_input(
 
 @input_guardrail
 async def validate_diet_input(
-    context: RunContextWrapper,
-    agent: Agent,
     input: Union[str, List[dict]]
 ) -> GuardrailFunctionOutput:
     if isinstance(input, list):
@@ -124,8 +120,6 @@ async def validate_diet_input(
 
 @input_guardrail
 async def validate_injury_input(
-    context: RunContextWrapper,
-    agent: Agent,
     input: Union[str, List[dict]]
 ) -> GuardrailFunctionOutput:
     if isinstance(input, list):
